@@ -1,0 +1,1 @@
+termAPI.write("Hey, i think you forgor that is UDN terminal not PCsystem 💀")
