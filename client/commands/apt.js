@@ -21,7 +21,8 @@ subcommands:
 	install <packageId> - installs a package
 	update <packageId> - updates a already installed package
 	uninstall <packageId> - uninstall a package
-	meta, metadata, -m <packageId> - shows the metadata(name, desc, etc) of a package`)
+	meta, metadata, -m <packageId> - shows the metadata(name, desc, etc) of a package
+	search <...query> - searches`)
 }
 async function installPkg(appId,update=false) {
 	let appUrl = `${repo}/app/${appId}`
@@ -79,8 +80,7 @@ async function installPkg(appId,update=false) {
 			}
 			if (file.type === "binary") {
 				let arrBuf = await file_response.arrayBuffer();
-				let arrInt = new Uint8Array(arrBuf);
-				file_data = arrInt;
+				file_data = arrBuf;
 			}
 			extraFiles.push({
 				filename: file.filename,
@@ -233,4 +233,14 @@ required files: ${manifest.files.map(x => x.filename).join(', ')}\r
 description:\r
 ${manifest.description.replace(/\n/g,"\r\n")}`);
 
+}
+if (args[0] === "search") {
+	termAPI.write("name (id) - description\r\nSearching please wait...\r\n\r\n")
+	let query = args.slice(1).join(' ');
+
+	let searchResults = await (await fetch(`${repo}/search?q=${escape(query)}`)).json();
+
+	for (let result of searchResults) {
+		termAPI.write(`${result.name} (${result._id}) - ${termAPI.toCRLF(result.description)}\r\n`);
+	}
 }

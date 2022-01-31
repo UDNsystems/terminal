@@ -3,7 +3,7 @@
  * @description Lists the current directory.
  */
 if (termAPI.isHomeDirectory()) {
-	let keys = await termAPI.OSComms.getStorageKeys()
+	let keys = await OSRequest('LIST','localStorage');
 	let listing = [];
 	let dirDuck2 = termAPI.getDirectory().replace('/home','').split('/');
 	function spaceDuck(key) {

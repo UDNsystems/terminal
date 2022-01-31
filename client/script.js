@@ -1,3 +1,17 @@
+if ('serviceWorker' in navigator) {
+	if (!navigator.serviceWorker.controller) {
+		navigator.serviceWorker.register("./sw.js");
+	}
+}
+navigator.serviceWorker.addEventListener('message',async (ev) => {
+	console.log(ev)
+	const req = ev.data.request;
+	const mid = ev.data.messageId;
+
+	if (req.get === "stdin") {
+		ev.source.postMessage({replyTo: mid, response: await termAPI.prompt(req.q)});
+	}
+})
 localforage.config({
     driver      : localforage.INDEXEDDB,
     name        : 'terminalInternalStorage',
@@ -154,7 +168,7 @@ term.onKey(async key => {
 // }
 let OSComms = {
 	getStorageKeys() {
-		return new Promise((resolve) => {
+		/*return new Promise((resolve) => {
 			top.postMessage({action: 'storageGetKeys'},"*");
 			let ogDuck = window.onmessage;
 			window.onmessage = function(ev) {
@@ -163,10 +177,13 @@ let OSComms = {
 					resolve(ev.data.data);
 				}
 			}
-		})
+		})*/
+    term.write('WARN: OSComms.getStorageKeys() is deprecated and may not work properly\r\n');
+    return OSRequest('LIST','localStorage')
+    //prevent packages from ducking up
 	},
 	getStorageKey(key) {
-		return new Promise((resolve) => {
+		/*return new Promise((resolve) => {
 			top.postMessage({action: 'getStorageKey', data: key},"*");
 			let ogDuck = window.onmessage;
 			window.onmessage = function(ev) {
@@ -175,21 +192,31 @@ let OSComms = {
 					resolve(ev.data.data);
 				}
 			}
-		})
+		})*/
+    term.write('WARN: OSComms.getStorageKey() is deprecated and may not work properly\r\n');
+    return OSRequest('GET', 'localStorage', key);
+    //prevent packages from ducking up
 	},
 	setStorageKey(key, value) {
-		top.postMessage({action: 'setStorageKey', key, value}, "*");
+		//top.postMessage({action: 'setStorageKey', key, value}, "*");
+    term.write('WARN: OSComms.setStorageKey() is deprecated and may not work properly\r\n');
+    return OSRequest('POST', 'localStorage', {key, value})
+    //prevent packages from ducking up
 	},
 	reboot() {
 		top.postMessage({action: 'evalJS', code: 'location.reload();'},"*")
+    term.write('WARN: OSComms.reboot() is deprecated and may not work properly\r\n');
 	},
 	removeStorageKey(key) {
+    term.write('WARN: OSComms.removeStorageKey() is deprecated and may not work properly\r\n');
 		top.postMessage({action: 'removeStorageKey', key}, "*");
 	},
 	openIframe(url, title, width, height) {
+    term.write('WARN: OSComms.openIframe() is deprecated and may not work properly\r\n');
 		top.postMessage({event: 'openIframe', title, url, width, height}, "*")
 	},
 	shutdown() {
+    term.write('WARN: OSComms.shutdown() is deprecated and may not work properly\r\n');
 		top.postMessage({
 			action: 'shutdown'
 		},'*')
@@ -340,7 +367,7 @@ let termAPI = {
 		},
 		get(path) {
 			if (this.isHomePath(path)) {
-				return OSComms.getStorageKey(path.slice(5));
+				return OSRequest('GET', 'localStorage', path.slice(5));
 			}
 			return localforage.getItem(path);
 		},
@@ -353,14 +380,15 @@ let termAPI = {
 		},
 		set(path, data) {
 			if (this.isHomePath(path)) {
-				OSComms.setStorageKey(path.slice(5), data);
-				return Promise.resolve(); // to make sure its a promise
+				//OSComms.setStorageKey(path.slice(5), data);
+				//return Promise.resolve(); // to make sure its a promise
+        return OSRequest('POST', 'localStorage', {key: path, value: data});
 			}
 			return localforage.removeItem(path);
 		},
 		async keys() {
 			return (await localforage.keys()).concat(
-				(await OSComms.getStorageKeys())
+				(await OSRequest('LIST', 'localStorage'))
 					.filter(x => x.startsWith('/'))
 					.map(x => "/home"+x)
 			);
